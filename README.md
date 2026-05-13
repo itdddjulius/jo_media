@@ -14,6 +14,8 @@ A powerful, feature-rich web application that combines media gallery management 
 - [Configuration](#configuration)
 - [Troubleshooting](#troubleshooting)
 - [Development](#development)
+- [Testing](#testing)
+- [Support](#support)
 
 ## Overview
 
@@ -90,7 +92,7 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 Access the application
 Open your browser and navigate to: http://localhost:8000
 
-Backend Functions
+## Backend Functions
 Core FastAPI Functions
 root(request: Request) -> HTMLResponse
 Purpose: Main entry point that serves the complete HTML application
@@ -247,7 +249,8 @@ Returns: Full HTML page with embedded CSS, JavaScript, and structure
 python
 def generate_html() -> str:
     """Returns the complete frontend application code"""
-Frontend Functions
+
+## Frontend Functions
 Gallery Management Functions
 generateGallery() -> void
 Purpose: Creates gallery from selected items and input text
@@ -543,7 +546,7 @@ closeImagePopup(event) -> void
 Purpose: Closes the image popup overlay
 Effect: Hides popup and clears content
 
-API Endpoints
+## API Endpoints
 Method	Endpoint	Description	Request Body	Response
 GET	/	Main application page	None	HTML Document
 GET	/health	Health check	None	Status object
@@ -555,7 +558,8 @@ POST	/api/settings/update	Update settings	{settings object}	Updated config
 GET	/api/settings/get	Get settings	None	Current config
 POST	/api/search/google	Google search	query string	Search URL
 POST	/api/clear/gallery	Clear gallery	None	Confirmation
-Usage Guide
+
+## Usage Guide
 Quick Start Tutorial
 Adding Media Items
 
@@ -617,7 +621,9 @@ markdown
 3. Select all results
 4. Click "DISPLAY SELECTED"
 5. Save gallery as editable list
-Configuration
+
+
+## Configuration
 Settings Object Structure
 javascript
 {
@@ -634,7 +640,9 @@ css
     --dark: #050505;       /* Dark surface color */
     --gallery-bg: #000000; /* Gallery background */
 }
-Troubleshooting
+
+
+## Troubleshooting
 Common Issues and Solutions
 Issue	Possible Cause	Solution
 Gallery not displaying	No items selected	Select items or generate gallery first
@@ -659,7 +667,7 @@ Clear gallery periodically to free memory
 
 Use local files instead of external URLs when possible
 
-Development
+## Development
 Extending the Application
 Adding New Media Types:
 
@@ -696,7 +704,8 @@ async def export_gallery():
         "gallery": session_data["gallery"],
         "settings": session_data["settings"]
     })
-Testing
+
+## Testing
 bash
 # Test health endpoint
 curl http://localhost:8000/health
@@ -719,7 +728,7 @@ HTTPS recommended for production
 License
 This project is open source and available for personal and commercial use.
 
-Support
+## Support
 For issues or questions:
 
 Check the troubleshooting guide
