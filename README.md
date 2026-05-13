@@ -1,21 +1,25 @@
 JOHTML-PYTHON Search / Media Gallery V4+
 A powerful, feature-rich web application that combines media gallery management with search capabilities, YouTube integration, and customizable display options. Built with FastAPI backend and modern frontend technologies.
 
-?? Table of Contents
-Overview
-Features
-Architecture
-Installation
-Backend Functions
-Frontend Functions
-API Endpoints
-Usage Guide
-Configuration
-Troubleshooting
-Development
-Testing
-Support
-Overview
+## 📋 Table of Contents
+- [Overview](#overview)
+- [Features](#features)
+- [Architecture](#architecture)
+- [Installation](#installation)
+- [Backend Functions](#backend-functions)
+- [Frontend Functions](#frontend-functions)
+- [API Endpoints](#api-endpoints)
+- [Usage Guide](#usage-guide)
+- [Configuration](#configuration)
+- [Troubleshooting](#troubleshooting)
+- [Development](#development)
+- [Testing](#testing)
+- [Support](#support)
+- [Overview](#overview)
+
+
+
+
 JOHTML Search/Media Gallery V4+ is a comprehensive media management system that allows users to:
 
 Upload and manage images, audio, and video files
