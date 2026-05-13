@@ -1,4 +1,4 @@
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request, HTTPException, UploadFile, File
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -6,9 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from typing import List, Optional, Dict, Any
 import uvicorn
-import os
 import re
-from urllib.parse import urlparse, quote
+from urllib.parse import quote, urlparse
+import json
+from datetime import datetime
 
 app = FastAPI(
     title="JOHTML Search / Media Gallery V4+",
@@ -25,18 +26,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Mount static files (if needed for additional assets)
-app.mount("/static", StaticFiles(directory="static", html=True), name="static")
-
-# Templates (we'll use inline HTML for single-file solution)
-templates = Jinja2Templates(directory="templates")
-
 # Data models
-class GalleryItem(BaseModel):
-    src: str
-    label: str
-    type: str
-
 class MediaItem(BaseModel):
     url: str
     title: Optional[str] = None
@@ -51,13 +41,70 @@ class Settings(BaseModel):
     detailColor: str = "#00ff66"
     enlargeMode: str = "hover"
 
-# In-memory storage for session data (in production, use a database)
+# In-memory storage for session data
 session_data = {
     "items": [],
     "gallery": [],
     "settings": Settings()
 }
 
+# Helper functions
+def detect_media_type(url: str) -> str:
+    """Detect media type from URL"""
+    url_lower = url.lower()
+    
+    # Check for image extensions
+    if re.search(r'\.(jpg|jpeg|png|gif|webp|bmp|svg)$', url_lower):
+        return "image"
+    
+    # Check for audio extensions
+    if re.search(r'\.(mp3|wav|ogg|m4a|flac|aac)$', url_lower):
+        return "audio"
+    
+    # Check for video extensions
+    if re.search(r'\.(mp4|webm|mov|avi|mkv|flv)$', url_lower):
+        return "video"
+    
+    # Check for Google search
+    if "google.com/search" in url_lower:
+        return "google"
+    
+    # YouTube URLs
+    if "youtube.com" in url_lower or "youtu.be" in url_lower:
+        return "youtube"
+    
+    # Default to link
+    return "link"
+
+def extract_youtube_id_from_url(url: str) -> str:
+    """Extract YouTube video ID from various URL formats"""
+    try:
+        parsed = urlparse(url)
+        
+        # Handle youtu.be format
+        if "youtu.be" in parsed.netloc:
+            return parsed.path.strip("/")
+        
+        # Handle youtube.com formats
+        if "youtube.com" in parsed.netloc:
+            # Standard watch URL
+            if "watch" in parsed.path:
+                query_params = dict(pair.split("=") for pair in parsed.query.split("&") if "=" in pair)
+                return query_params.get("v", "")
+            
+            # Embed URL
+            if "/embed/" in parsed.path:
+                return parsed.path.split("/embed/")[1].split("/")[0]
+            
+            # Shorts URL
+            if "/shorts/" in parsed.path:
+                return parsed.path.split("/shorts/")[1].split("/")[0]
+        
+        return ""
+    except:
+        return ""
+
+# API Endpoints
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
     """Main application page"""
@@ -186,62 +233,6 @@ async def clear_gallery():
         "success": True,
         "message": "Gallery cleared successfully"
     })
-
-# Helper functions
-def detect_media_type(url: str) -> str:
-    """Detect media type from URL"""
-    url_lower = url.lower()
-    
-    # Check for image extensions
-    if re.search(r'\.(jpg|jpeg|png|gif|webp|bmp|svg)$', url_lower):
-        return "image"
-    
-    # Check for audio extensions
-    if re.search(r'\.(mp3|wav|ogg|m4a|flac|aac)$', url_lower):
-        return "audio"
-    
-    # Check for video extensions
-    if re.search(r'\.(mp4|webm|mov|avi|mkv|flv)$', url_lower):
-        return "video"
-    
-    # Check for Google search
-    if "google.com/search" in url_lower:
-        return "google"
-    
-    # YouTube URLs
-    if "youtube.com" in url_lower or "youtu.be" in url_lower:
-        return "youtube"
-    
-    # Default to link
-    return "link"
-
-def extract_youtube_id_from_url(url: str) -> str:
-    """Extract YouTube video ID from various URL formats"""
-    try:
-        parsed = urlparse(url)
-        
-        # Handle youtu.be format
-        if "youtu.be" in parsed.netloc:
-            return parsed.path.strip("/")
-        
-        # Handle youtube.com formats
-        if "youtube.com" in parsed.netloc:
-            # Standard watch URL
-            if "watch" in parsed.path:
-                query_params = dict(pair.split("=") for pair in parsed.query.split("&") if "=" in pair)
-                return query_params.get("v", "")
-            
-            # Embed URL
-            if "/embed/" in parsed.path:
-                return parsed.path.split("/embed/")[1].split("/")[0]
-            
-            # Shorts URL
-            if "/shorts/" in parsed.path:
-                return parsed.path.split("/shorts/")[1].split("/")[0]
-        
-        return ""
-    except:
-        return ""
 
 def generate_html() -> str:
     """Generate the complete HTML content"""
@@ -1089,4 +1080,341 @@ async function show(i) {
     mainDisplay.innerHTML = `
       <i class="fa-solid fa-file-audio fa-5x text-success mb-3"></i>
       <h4>${item.label}</h4>
-      <audio src="${item.src}" controls aut
+      <audio src="${item.src}" controls autoplay class="w-100"></audio>
+    `;
+  } else if (item.type === "video") {
+    mainDisplay.innerHTML = `
+      <video src="${item.src}" controls autoplay class="w-100"></video>
+      <p class="mt-2">${item.label}</p>
+    `;
+  } else if (item.type === "youtube") {
+    const videoId = await extractYouTubeIdFromUrl(item.src);
+    mainDisplay.innerHTML = `
+      <iframe src="https://www.youtube.com/embed/${videoId}" 
+              allowfullscreen 
+              style="width:100%; height:400px; border-radius:12px;">
+      </iframe>
+      <p class="mt-2">${item.label}</p>
+    `;
+  } else if (item.type === "google") {
+    mainDisplay.innerHTML = `
+      <i class="fa-brands fa-google fa-5x text-success mb-3"></i>
+      <h4>${item.label}</h4>
+      <a href="${item.src}" target="_blank" class="btn btn-green mt-3">
+        Open Google Search Result
+      </a>
+    `;
+  } else {
+    mainDisplay.innerHTML = `
+      <i class="fa-solid fa-link fa-5x text-success mb-3"></i>
+      <h4>${item.label}</h4>
+      <a href="${item.src}" target="_blank" class="btn btn-green mt-3">
+        Open Link
+      </a>
+    `;
+  }
+}
+
+async function extractYouTubeIdFromUrl(url) {
+  try {
+    const response = await fetch('/api/youtube/extract', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ url: url })
+    });
+    const data = await response.json();
+    return data.videoId;
+  } catch (error) {
+    console.error('Error extracting YouTube ID:', error);
+    return '';
+  }
+}
+
+function openImagePopup(item, i = index) {
+  popupIndex = i;
+
+  if (item.type === "video") {
+    imagePopupContent.innerHTML = `
+      <video src="${item.src}" controls autoplay muted loop></video>
+    `;
+  } else if (item.type === "youtube") {
+    extractYouTubeIdFromUrl(item.src).then(videoId => {
+      imagePopupContent.innerHTML = `
+        <iframe src="https://www.youtube.com/embed/${videoId}?autoplay=1" 
+                allowfullscreen 
+                style="width:100%; height:100%; border-radius:12px;">
+        </iframe>
+      `;
+    });
+  } else {
+    imagePopupContent.innerHTML = `
+      <img src="${item.src}" alt="${item.label}">
+    `;
+  }
+
+  imagePopup.classList.remove("minimized");
+  imagePopup.classList.remove("maximized");
+  imagePopup.style.display = "flex";
+}
+
+function closeImagePopup(event) {
+  if (event) event.stopPropagation();
+
+  imagePopup.style.display = "none";
+  imagePopupContent.innerHTML = "";
+}
+
+function popupPrev(event) {
+  event.stopPropagation();
+
+  if (!gallery.length) return;
+
+  popupIndex = (popupIndex - 1 + gallery.length) % gallery.length;
+  const item = gallery[popupIndex];
+
+  show(popupIndex);
+
+  if (["image", "video", "local", "youtube"].includes(item.type)) {
+    openImagePopup(item, popupIndex);
+  }
+}
+
+function popupNext(event) {
+  event.stopPropagation();
+
+  if (!gallery.length) return;
+
+  popupIndex = (popupIndex + 1) % gallery.length;
+  const item = gallery[popupIndex];
+
+  show(popupIndex);
+
+  if (["image", "video", "local", "youtube"].includes(item.type)) {
+    openImagePopup(item, popupIndex);
+  }
+}
+
+function popupMin(event) {
+  event.stopPropagation();
+
+  imagePopup.classList.remove("maximized");
+  imagePopup.classList.add("minimized");
+}
+
+function popupMax(event) {
+  event.stopPropagation();
+
+  imagePopup.classList.remove("minimized");
+  imagePopup.classList.add("maximized");
+}
+
+function next() {
+  if (!gallery.length) return;
+
+  index = (index + 1) % gallery.length;
+  show(index);
+}
+
+function prev() {
+  if (!gallery.length) return;
+
+  index = (index - 1 + gallery.length) % gallery.length;
+  show(index);
+}
+
+function maxModal() {
+  const modalDialog = document.querySelector("#galleryModal .modal-dialog");
+  modalDialog.classList.add("modal-max");
+  modalDialog.classList.remove("modal-min");
+}
+
+function minModal() {
+  const modalDialog = document.querySelector("#galleryModal .modal-dialog");
+  modalDialog.classList.remove("modal-max");
+  modalDialog.classList.add("modal-min");
+}
+
+function clearGallery() {
+  gallery = [];
+  pageGalleryStrip.innerHTML = "";
+  modalGalleryStrip.innerHTML = "";
+  mainDisplay.innerHTML = `<p class="text-warning">Gallery cleared.</p>`;
+  status("Gallery cleared.");
+}
+
+/* MP3 SETUP */
+document.getElementById("musicInput").addEventListener("change", function(e) {
+  const file = e.target.files[0];
+
+  if (!file) return;
+
+  bgMusic.src = URL.createObjectURL(file);
+  bgMusic.loop = true;
+  bgMusic.volume = 0.5;
+
+  status("? Background music loaded.");
+});
+
+function playMusic() {
+  bgMusic.play();
+  status("? Music playing");
+}
+
+function pauseMusic() {
+  bgMusic.pause();
+  status("? Music paused");
+}
+
+function fastForwardMusic() {
+  bgMusic.currentTime += 10;
+  status("? Skipped forward 10 seconds");
+}
+
+function fastRewindMusic() {
+  bgMusic.currentTime = Math.max(0, bgMusic.currentTime - 10);
+  status("? Skipped backward 10 seconds");
+}
+
+function volumeUp() {
+  bgMusic.volume = Math.min(1, bgMusic.volume + 0.1);
+  status(`?? Volume: ${Math.round(bgMusic.volume * 100)}%`);
+}
+
+function volumeDown() {
+  bgMusic.volume = Math.max(0, bgMusic.volume - 0.1);
+  status(`?? Volume: ${Math.round(bgMusic.volume * 100)}%`);
+}
+
+/* YOUTUBE SETUP */
+function extractYouTubeIdFromInput(url) {
+  try {
+    const parsed = new URL(url);
+    if (parsed.hostname.includes("youtu.be")) {
+      return parsed.pathname.replace("/", "");
+    }
+    if (parsed.searchParams.get("v")) {
+      return parsed.searchParams.get("v");
+    }
+    if (parsed.pathname.includes("/embed/")) {
+      return parsed.pathname.split("/embed/")[1].split("/")[0];
+    }
+    if (parsed.pathname.includes("/shorts/")) {
+      return parsed.pathname.split("/shorts/")[1].split("/")[0];
+    }
+    return "";
+  } catch {
+    return "";
+  }
+}
+
+function loadYouTubeVideo() {
+  const url = document.getElementById("youtubeUrlInput").value.trim();
+  const videoId = extractYouTubeIdFromInput(url);
+
+  if (!videoId) {
+    status("? Invalid YouTube URL.");
+    return;
+  }
+
+  if (youtubePlayer && youtubePlayer.loadVideoById) {
+    youtubePlayer.loadVideoById(videoId);
+    youtubePlayer.setVolume(youtubeVolume);
+  } else {
+    youtubePlayer = new YT.Player("youtubePlayer", {
+      videoId: videoId,
+      playerVars: {
+        playsinline: 1,
+        controls: 1
+      },
+      events: {
+        onReady: function(event) {
+          event.target.setVolume(youtubeVolume);
+        }
+      }
+    });
+  }
+
+  status("? YouTube video loaded.");
+}
+
+function youtubePlay() {
+  if (youtubePlayer && youtubePlayer.playVideo) {
+    youtubePlayer.playVideo();
+    status("? YouTube playing");
+  }
+}
+
+function youtubePause() {
+  if (youtubePlayer && youtubePlayer.pauseVideo) {
+    youtubePlayer.pauseVideo();
+    status("? YouTube paused");
+  }
+}
+
+function youtubeRewind() {
+  if (youtubePlayer && youtubePlayer.getCurrentTime && youtubePlayer.seekTo) {
+    const currentTime = youtubePlayer.getCurrentTime();
+    youtubePlayer.seekTo(Math.max(0, currentTime - 10), true);
+    status("? YouTube rewound 10 seconds");
+  }
+}
+
+function youtubeForward() {
+  if (youtubePlayer && youtubePlayer.getCurrentTime && youtubePlayer.seekTo) {
+    const currentTime = youtubePlayer.getCurrentTime();
+    youtubePlayer.seekTo(currentTime + 10, true);
+    status("? YouTube forwarded 10 seconds");
+  }
+}
+
+function youtubeVolumeUp() {
+  youtubeVolume = Math.min(100, youtubeVolume + 10);
+  if (youtubePlayer && youtubePlayer.setVolume) {
+    youtubePlayer.setVolume(youtubeVolume);
+    status(`?? YouTube Volume: ${youtubeVolume}%`);
+  }
+}
+
+function youtubeVolumeDown() {
+  youtubeVolume = Math.max(0, youtubeVolume - 10);
+  if (youtubePlayer && youtubePlayer.setVolume) {
+    youtubePlayer.setVolume(youtubeVolume);
+    status(`?? YouTube Volume: ${youtubeVolume}%`);
+  }
+}
+
+/* COLOUR / MODE SETUP */
+function changeGalleryBackground(colour) {
+  document.documentElement.style.setProperty("--gallery-bg", colour);
+  status(`?? Gallery background changed to ${colour}`);
+}
+
+function changeEnlargeMode(mode) {
+  enlargeMode = mode;
+  document.body.classList.toggle("hover-enlarge", mode === "hover");
+  status(`? Enlarge mode changed to: ${mode.toUpperCase()}`);
+}
+
+function changeDetailColour(colour) {
+  document.documentElement.style.setProperty("--green", colour);
+  document.documentElement.style.setProperty("--green2", colour);
+  status(`?? Detail colour changed to ${colour}`);
+}
+
+// Initialize with default items
+items = defaultItems.map(x =>
+  x === "SELECT_ALL"
+    ? makeItem("SELECT_ALL", "SELECT_ALL", "control")
+    : makeItem(x)
+);
+
+refresh();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
+"""
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
