@@ -1,5 +1,7 @@
-JOHTML-PYTHON Search / Media Gallery V4+
+# JOHTML-PYTHON Search / Media Gallery V4+
+
 A powerful, feature-rich web application that combines media gallery management with search capabilities, YouTube integration, and customizable display options. Built with FastAPI backend and modern frontend technologies.
+
 
 ## 📋 Table of Contents
 - [Overview](#overview)
@@ -20,42 +22,55 @@ A powerful, feature-rich web application that combines media gallery management 
 
 
 
-JOHTML Search/Media Gallery V4+ is a comprehensive media management system that allows users to:
+## Overview
 
-Upload and manage images, audio, and video files
-Search and display Google search results
-Integrate YouTube video playback
-Customize gallery appearance and behavior
-Manage media items through an intuitive interface
-Features
-Core Features
+JOHTML Search/Media Gallery V4+ is a comprehensive media management system that allows users to:
+- Upload and manage images, audio, and video files
+- Search and display Google search results
+- Integrate YouTube video playback
+- Customize gallery appearance and behavior
+- Manage media items through an intuitive interface
+
+
+## Features
+
+### Core Features
 Multi-format Media Support: Images, audio files, video files, YouTube videos
 Google Search Integration: Convert search queries to clickable result links
 Local File Upload: Support for uploading local media files
 Dual Gallery Display: Main page gallery and modal gallery view
 Customizable UI: Change colors, enlarge modes, and display settings
-Media Types Supported
+
+### Media Types Supported
 Type	Formats
 Images	JPG, JPEG, PNG, GIF, WEBP
 Audio	MP3, WAV, OGG, M4A
 Video	MP4, WEBM, MOV
 External	YouTube, Google Search, Direct Links
-Architecture
-Technology Stack
-Backend: FastAPI (Python) Frontend: HTML5, CSS3, JavaScript Libraries: Bootstrap 5, TailwindCSS, Font Awesome, YouTube IFrame API Server: Uvicorn (ASGI)
+
+
+## Architecture
+
+### Technology Stack
+Backend: FastAPI (Python) 
+Frontend: HTML5, CSS3, JavaScript 
+Libraries: Bootstrap 5, TailwindCSS, Font Awesome, YouTube IFrame API 
+Server: Uvicorn (ASGI)
 
 text
 
-Project Structure
+### Project Structure
 johtml-media-gallery/ +-- app.py # Single-file FastAPI application +-- requirements.txt # Python dependencies +-- README.md # Documentation
 
 text
 
-Installation
-Prerequisites
+## Installation
+
+### Prerequisites
 Python 3.8 or higher
 pip package manager
-Step-by-Step Installation
+
+### Step-by-Step Installation
 Clone or create the project directory
 mkdir johtml-media-gallery
 cd johtml-media-gallery
@@ -79,7 +94,8 @@ Open your browser and navigate to: http://localhost:8000
 
 
 ## backend-functions
-Core FastAPI Functions
+
+### Core FastAPI Functions
 root(request: Request) -> HTMLResponse
 Purpose: Main entry point that serves the complete HTML application
 Returns: Complete HTML document as HTMLResponse
@@ -235,6 +251,8 @@ Returns: Full HTML page with embedded CSS, JavaScript, and structure
 python
 def generate_html() -> str:
     """Returns the complete frontend application code"""
+
+
 
 ## Frontend Functions
 Gallery Management Functions
