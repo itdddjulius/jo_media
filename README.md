@@ -92,7 +92,8 @@ uvicorn app:app --reload --host 0.0.0.0 --port 8000
 Access the application
 Open your browser and navigate to: http://localhost:8000
 
-## Backend Functions
+
+## backend-functions
 Core FastAPI Functions
 root(request: Request) -> HTMLResponse
 Purpose: Main entry point that serves the complete HTML application
