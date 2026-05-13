@@ -552,16 +552,25 @@ Effect: Hides popup and clears content
 
 ## API Endpoints
 Method	Endpoint	Description	Request Body	Response
-GET	/	Main application page	None	HTML Document
-GET	/health	Health check	None	Status object
-POST	/api/items/add	Add media item	{url, title, type}	Success status
-POST	/api/gallery/generate	Generate gallery	["url1", "url2"]	Gallery items
-GET	/api/gallery/items	Get gallery items	None	Item list
-POST	/api/youtube/extract	Extract YouTube ID	{url, volume}	Video metadata
-POST	/api/settings/update	Update settings	{settings object}	Updated config
-GET	/api/settings/get	Get settings	None	Current config
-POST	/api/search/google	Google search	query string	Search URL
-POST	/api/clear/gallery	Clear gallery	None	Confirmation
+- GET	/	Main application page	None	HTML Document
+
+- GET	/health	Health check	None	Status object
+
+- POST	/api/items/add	Add media item	{url, title, type}	Success status
+
+- POST	/api/gallery/generate	Generate gallery	["url1", "url2"]	Gallery items
+
+- GET	/api/gallery/items	Get gallery items	None	Item list
+
+- POST	/api/youtube/extract	Extract YouTube ID	{url, volume}	Video metadata
+
+- POST	/api/settings/update	Update settings	{settings object}	Updated config
+
+- GET	/api/settings/get	Get settings	None	Current config
+
+- POST	/api/search/google	Google search	query string	Search URL
+
+- POST	/api/clear/gallery	Clear gallery	None	Confirmation
 
 ## Usage Guide
 Quick Start Tutorial
